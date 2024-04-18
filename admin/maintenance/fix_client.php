@@ -25,7 +25,7 @@
                         <th>Date Created</th>
                         <th>Date Modified</th>
                         <th>Customer Name</th>
-                        <th>No of Items</th>
+                        <th>No of Transactions</th>
                         <th>Total Amount</th>
                         <th>Due Amount</th>
                         <th>Action</th>
@@ -36,7 +36,7 @@
                     $i = 1;
                     $qry = $conn->query("SELECT * FROM `fix_customer` ORDER BY `customer_name` ASC");
                     while($row = $qry->fetch_assoc()):
-                        $row['items'] = count(explode(',',$row['stock_ids']));
+                        $row['items'] = ($row['stock_ids'] !== null) ? count(explode(',', $row['stock_ids'])) : 0;
                     ?>
                     <tr>
                         <td class="text-center"><?php echo $i++; ?></td>
@@ -66,6 +66,7 @@
         </div>
     </div>
 </div>
+
 
 <script>
     $(document).ready(function(){

@@ -157,6 +157,17 @@ Class Master extends DBConnection {
 			$sql = "INSERT INTO `fix_customer` SET {$data} ";
 			$save = $this->conn->query($sql);
 		} else {
+			// Retrieve the current due amount from the database
+			$qry = $this->conn->query("SELECT due_amount FROM `fix_customer` WHERE id = '{$id}'");
+			$row = $qry->fetch_assoc();
+			$current_due_amount = $row['due_amount'];
+	
+			// Calculate the new due amount
+			$new_due_amount = max(0, $current_due_amount - $due_amount);
+	
+			// Update the due amount in the data array
+			$data .= ", `due_amount`='{$new_due_amount}'";
+	
 			$sql = "UPDATE `fix_customer` SET {$data} WHERE id = '{$id}' ";
 			$save = $this->conn->query($sql);
 		}
@@ -173,6 +184,7 @@ Class Master extends DBConnection {
 		}
 		return json_encode($resp);
 	}
+	
 	
 	function save_category(){
 		// Check if category_name is present in the POST data
@@ -728,6 +740,37 @@ Class Master extends DBConnection {
 		return json_encode($resp);
 
 	}
+
+	
+	function delete_fix_client(){
+		extract($_POST);
+	
+		// Query the database to fetch the client record
+		$get = $this->conn->query("SELECT * FROM fix_customer WHERE id = '{$id}'");
+		if($get->num_rows > 0){
+			// Fetch the client record
+			$res = $get->fetch_array();
+		}
+	
+		// Delete the client record from the fix_customer table
+		$del = $this->conn->query("DELETE FROM fix_customer WHERE id = '{$id}'");
+		if($del){
+			// If deletion is successful
+			$resp['status'] = 'success';
+			$this->settings->set_flashdata('success', "Client record successfully deleted.");
+	
+			// Optionally, delete associated records from other tables
+			// Example: $this->conn->query("DELETE FROM other_table WHERE client_id = '{$id}'");
+		} else {
+			// If deletion fails
+			$resp['status'] = 'failed';
+			$resp['error'] = $this->conn->error;
+		}
+	
+		// Return JSON response
+		return json_encode($resp);
+	}
+	
 	function save_invoice() {
 		if(empty($_POST['id'])){
 			$prefix = "SALE";
@@ -799,6 +842,7 @@ Class Master extends DBConnection {
 		// If the customer type is fixed, update the fixed customer table
 		if ($client === 'fixed') {
 			// Update fixed customer table with the total and due amount
+			
 			$updateCustomerQuery = "UPDATE `fix_customer` SET total_amount = total_amount + '{$amount}', due_amount = due_amount + '{$amount_due}' WHERE id = '{$cust_id}'";
 			$updateCustomerResult = $this->conn->query($updateCustomerQuery);
 	
@@ -907,6 +951,9 @@ switch ($action) {
 	break;
 	case 'delete_po':
 		echo $Master->delete_po();
+	break;
+	case 'delete_fix_client':
+		echo $Master->delete_fix_client();
 	break;
 	case 'save_receiving':
 		echo $Master->save_receiving();

@@ -2,6 +2,8 @@
 require_once('../../config.php');
 
 $id = isset($_GET['id']) ? $_GET['id'] : '';
+$due_amount = 0;
+$paying_amount = 0;
 if($id > 0){
     $qry = $conn->query("SELECT * from `fix_customer` where id = '$id' ");
     if($qry->num_rows > 0){
@@ -14,22 +16,29 @@ if($id > 0){
         $sales_no = $customer_data['sales_no'];
         $client_type = $customer_data['client_type'];
     }
+   
 }
 ?>
+<?php echo $due_amount;
 
+ ?>
 <form action="" id="customer-form">
     <input type="hidden" name="id" value="<?php echo isset($id) ? $id : '' ?>">
     <div class="form-group">
         <label for="customer_name" class="control-label">Customer Name</label>
         <input type="text" name="customer_name" id="customer_name" class="form-control rounded-0" value="<?php echo isset($customer_name) ? $customer_name : ''; ?>">
     </div>
-    <div class="form-group">
-        <label for="customer_name" class="control-label">Due Amount</label>
-        <input type="text" name="customer_name" id="customer_name" class="form-control rounded-0" value="<?php echo isset($due_amount) ? $due_amount : ''; ?>">
-    </div>
    
-</form>
+    <label for="due_amount" class="control-label"><?php echo ($id > 0) ? 'Paying Amount' : 'Due Amount'; ?></label>
 
+    <input type="text" name="due_amount" id="due_amount" class="form-control rounded-0" value="<?php echo ($id > 0) ? max(0, $due_amount ) : $due_amount; ?>">
+
+    <input type="hidden" name="total_amount" id="total_amount" class="form-control rounded-0" value="<?php echo ($id > 0) ? max(0, $total_amount) : 0; ?>">
+
+    </div>
+</form>
+<div class="form-group">
+      
 <script>
     $(document).ready(function(){
         $('#customer-form').submit(function(e){
