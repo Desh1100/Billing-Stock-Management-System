@@ -602,8 +602,29 @@ ALTER TABLE `item_list` ADD CONSTRAINT `fk_item_category`
     `sales_no` VARCHAR(50),
     `client_type` VARCHAR(50),
     `cust_ids` TEXT,
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+
+ALTER TABLE `item_list`
+ADD COLUMN `selling_cost` DECIMAL(10, 2);
+
+CREATE TABLE cash_book (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `sales_no` VARCHAR(255),
+    `received` DECIMAL(10, 2),
+    `total_cost` DECIMAL(10, 2),
+    `change` DECIMAL(10, 2),
+    `total_earning` DECIMAL(10, 2)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE cash_book_summary (
+   `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `earnings` DECIMAL(10, 2)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 /*ALTER TABLE purchase_order_list

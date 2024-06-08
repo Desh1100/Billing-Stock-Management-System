@@ -87,6 +87,14 @@
                         </p>
                       </a>
                     </li>
+                    <li class="nav-item">
+                      <a href="<?php echo base_url ?>admin/?page=cash_book" class="nav-link nav-page=cash_book">
+                      <i class="nav-icon fas fa-book"></i>
+                        <p>
+                          Cash Book
+                        </p>
+                      </a>
+                    </li>
                     <?php if($_settings->userdata('type') == 1): ?>
                     <li class="nav-header">Maintenance</li>
                     <li class="nav-item dropdown">

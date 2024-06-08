@@ -25,6 +25,10 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
             <input type="number" name="cost" id="cost" step="any" class="form-control rounded-0 text-end" value="<?php echo isset($cost) ? $cost : ''; ?>">
         </div>
         <div class="form-group">
+            <label for="cost" class="control-label"> Selling Cost</label>
+            <input type="number" name="selling_cost" id="selling_cost" step="any" class="form-control rounded-0 text-end" value="<?php echo isset($selling_cost) ? $selling_cost : ''; ?>">
+        </div>
+        <div class="form-group">
             <label for="category_id" class="control-label">Category</label>
             <select name="category_id" id="category_id" class="custom-select select2">
                 <option <?php echo !isset($category_id) ? 'selected' : '' ?> disabled>Please select a category</option>

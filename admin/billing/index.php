@@ -103,6 +103,22 @@ $clients_id_json = json_encode($clients_id);
                         <td id="subtotalValue" colspan="1">0.00</td>
 
                     </tr>
+                    <tr id="totalAmountPaidRow">
+                    <td colspan="4"></td>
+    <td id="totalamtpaidtxt"><strong>Total Amount Paid</strong></td>
+    <td id="totalAmountPaid" colspan="1">0.00</td>
+</tr>
+
+                    <tr id="receivedAmountRow">
+                        <td colspan="4"></td>
+                        <td id="receivedtxt"><strong>Amount Received</strong></td>
+                        <td id="receivedAmount" colspan="1">0.00</td>
+                    </tr>
+                    <tr id="changeRow">
+                        <td colspan="4"></td>
+                        <td id="changetxt"><strong>Change</strong></td>
+                        <td id="change" colspan="1">0.00</td>
+                    </tr>
                 </tfoot>
             </table>
 
@@ -133,6 +149,12 @@ $clients_id_json = json_encode($clients_id);
                 </select>
             </div>
 
+            <!-- Add an input field for Amount Received -->
+            <div class="form-group">
+                <label for="amountReceived">Amount Received</label>
+                <input type="number" class="form-control" id="amountReceived" placeholder="Enter amount received">
+            </div>
+
             <!-- Select customer type -->
             <div class="form-group">
                 <label for="customerType">Customer Type</label>
@@ -153,7 +175,7 @@ $clients_id_json = json_encode($clients_id);
 
             <!-- Button to generate invoice -->
             <button id="generateInvoiceBtn" class="btn btn-primary">Generate Invoice</button>
-            
+
 
         </div>
     </div>
@@ -163,7 +185,10 @@ $clients_id_json = json_encode($clients_id);
     $(document).ready(function () {
         var clientId = 0;
 
+        // Hide total amount paid row initially
+        $('#totalAmountPaidRow').hide();
 
+    
         // Hide search item list initially
         $('#searchItemList').hide();
 
@@ -194,6 +219,8 @@ $clients_id_json = json_encode($clients_id);
                 $('#fixedClientList').show();
             });
 
+            //updateUnitCost();
+
             // Event listener for selecting a client from the list
             $('#fixedClientList').on('click', '.dropdown-item', function () {
                 var selectedClient = $(this).text();
@@ -221,14 +248,17 @@ $clients_id_json = json_encode($clients_id);
             }
         });
 
-
+      $('#customerType').change(function () {
+    // Trigger updateSubtotal function when customer type changes
+    updateSubtotal();
+});
         // Display search item list on focus of search input
         $('#searchItem').on('focus keyup', function () {
             var input = $(this).val().toLowerCase();
             $('#searchItemList').empty();
             items.forEach(function (item) {
                 if (item.name.toLowerCase().indexOf(input) > -1) {
-                    $('#searchItemList').append('<li><a class="dropdown-item" href="#" data-category="' + item.category_name + '" data-cost="' + item.cost + '" data-itemid="' + item.id + '">' + item.name + '</a></li>');
+                    $('#searchItemList').append('<li><a class="dropdown-item" href="#" data-category="' + item.category_name + '" data-cost="' + item.cost + '" data-selling_cost="' + item.selling_cost + '" data-itemid="' + item.id + '">' + item.name + '</a></li>');
                 }
             });
             $('#searchItemList').show();
@@ -240,9 +270,11 @@ $clients_id_json = json_encode($clients_id);
             var selected_item = $(this).text();
             var category = $(this).data('category');
             var unitCost = $(this).data('cost');
+            var selling_cost = $(this).data('selling_cost');
             console.log("Selected Item:", selected_item);
             console.log("Category:", category);
             console.log("Unit Cost:", unitCost);
+            console.log("Selling Cost:", selling_cost);
             console.log("Item ID:", itemId);
             $('#searchItem').val(selected_item);
             $('#searchItemList').hide(); // Hide dropdown after selection
@@ -251,16 +283,19 @@ $clients_id_json = json_encode($clients_id);
             $('#searchItem').data('category', category);
             $('#searchItem').data('cost', unitCost);
             $('#searchItem').data('itemid', itemId);
+            $('#searchItem').data('selling_cost', selling_cost);
+
         });
 
+        // Add to List button click event handler
         // Add to List button click event handler
         $('#addToListBtn').click(function () {
             // Get the item details from the search bar
             var itemName = $('#searchItem').val();
             var category = $('#searchItem').data('category'); // Retrieve category from stored data
-            var unitCost = $('#searchItem').data('cost'); // Retrieve unit cost from stored data
+            var unitCost = ($('#customerType').val() === 'fixed') ? $('#searchItem').data('cost') : $('#searchItem').data('selling_cost');
+            //var selling_cost = $('#searchItem').data('selling-cost');
             var itemId = $('#searchItem').data('itemid'); // Retrieve item ID from stored data
-
 
             console.log("Item Name:", itemName);
             console.log("Category:", category);
@@ -269,6 +304,7 @@ $clients_id_json = json_encode($clients_id);
             var index = $('#billingTable tbody tr').length + 1;
             // Add item to the billing table
             $('#billingTable tbody').append(
+
                 '<tr>' +
                 '<td>' + index + '</td>' +
                 '<td>' + category + '<input type="hidden" class="item-id" value="' + itemId + '"></td>' +
@@ -288,21 +324,47 @@ $clients_id_json = json_encode($clients_id);
 
             // Update subtotal
             updateSubtotal();
+
         });
 
 
-        $('#discount, #tax').on('input', function () {
+        $('#discount, #tax,#amountReceived').on('input', function () {
             // Update subtotal to reflect changes in discount and tax
             updateSubtotal();
         });
+
+        function updateUnitCost() {
+            var customerType = $('#customerType').val();
+
+            $('#billingTable tbody tr').each(function (index, row) {
+                var unitCostCell = $(row).find('.unit-cost');
+                var itemId = $(row).find('.item-id').val();
+
+                // Retrieve the unit cost based on the customer type
+                var unitCost = (customerType === 'fixed') ? $('#searchItem[data-itemid="' + itemId + '"]').data('cost') : $('#searchItem[data-itemid="' + itemId + '"]').data('selling_cost');
+
+                // Set the unit cost for the current item
+                unitCostCell.text(unitCost);
+            });
+        }
+
+
+
+
 
 
         // Update subtotal function
         function updateSubtotal() {
             var subtotal = 0;
+            var amountReceived = 0;
+            var change = 0;
+            var totalAmountPaid = 0;
             var discount = parseFloat($('#discount').val()) || 0; // Get discount value
             var tax = parseFloat($('#tax').val()) || 0; // Get tax value
-
+             amountReceived = parseFloat($('#amountReceived').val()) || 0;
+            totalAmountPaid = parseFloat($('#totalAmountPaid').text()) || 0;
+           console.log("paid "+totalAmountPaid);
+            // updateUnitCost();
             $('#billingTable tbody tr').each(function () {
                 var quantity = parseInt($(this).find('.quantity').val());
                 var unitCost = parseFloat($(this).find('.unit-cost').text());
@@ -317,7 +379,20 @@ $clients_id_json = json_encode($clients_id);
             // Apply tax
             var taxAmount = (subtotal * (tax / 100)).toFixed(2);
             subtotal += parseFloat(taxAmount);
-
+             if(amountReceived == 0){
+                 change = 0;
+             }else{
+                if ($('#customerType').val() === 'fixed') {
+                    change = amountReceived - totalAmountPaid;
+                }else{
+                 change = amountReceived - subtotal;
+                }
+             }
+            
+            // Update table with received amount and change
+            $('#receivedAmount').text(amountReceived.toFixed(2));
+            $('#change').text(change.toFixed(2));
+            $('#totalAmountPaid').text(totalAmountPaid.toFixed(2));
             // Update subtotal value
             $('#subtotalValue').text(subtotal.toFixed(2));
             $('#subTaxValue').text(taxAmount);
@@ -338,6 +413,16 @@ $clients_id_json = json_encode($clients_id);
                 $('#subDiscountValue').attr('colspan', '1');
                 $('#subtotalRow td').attr('colspan', '4');
                 $('#subtotalValue').attr('colspan', '1');
+                $('#receivedAmountRow td').attr('colspan', '4');
+                $('#receivedAmount').attr('colspan', '1');
+                $('#changeRow td').attr('colspan', '4');
+                $('#change').attr('colspan', '1');
+                $('#totalAmountPaidRow td').attr('colspan', '4');
+                $('#totalAmountPaid').attr('colspan', '1');
+
+
+
+
 
 
             } else {
@@ -355,11 +440,25 @@ $clients_id_json = json_encode($clients_id);
                 $('#subtotalRow td').attr('colspan', '3');
                 $('#subtotalValue').attr('colspan', '1');
                 $('#tottxt').attr('colspan', '2');
+                $('#receivedAmountRow td').attr('colspan', '3');
+                $('#receivedAmount').attr('colspan', '1');
+                $('#receivedtxt').attr('colspan', '2');
+                $('#changeRow td').attr('colspan', '3');
+                $('#change').attr('colspan', '1');
+                $('#changetxt').attr('colspan', '2');
+
 
 
             }
 
 
+            if ($('#customerType').val() === 'fixed') {
+        $('#totalAmountPaidRow').show();
+        // Update total amount paid if customer type is fixed
+        updateTotalAmountPaid();
+    } else {
+        $('#totalAmountPaidRow').hide(); // Hide total amount paid row if customer type is normal
+    }
         }
 
         // Update total amount, amount paid, and amount to be paid on input change
@@ -370,8 +469,8 @@ $clients_id_json = json_encode($clients_id);
             var totalCost = quantity * unitCost;
             tr.find('.total-cost').text(totalCost.toFixed(2));
 
-            // Update subtotal
-            updateSubtotal();
+    
+          
 
             // Update amount to be paid and amount paid if customer type is fixed
             if ($('#customerType').val() === 'fixed') {
@@ -381,12 +480,34 @@ $clients_id_json = json_encode($clients_id);
                 var amountToPay = parseFloat(subtotal - amountPaid).toFixed(2);
                 tr.find('.amount-to-pay').text(amountToPay);
                 tr.find('.total-sub').text(subtotal);
+                updateTotalAmountPaid();
             }
+              // Update subtotal
+              updateSubtotal();
+
         });
+
+
+        // Function to update total amount paid
+function updateTotalAmountPaid() {
+    var totalAmountPaid = 0;
+
+    // Iterate through each row in the billing table
+    $('#billingTable tbody tr').each(function () {
+        var amountPaid = parseFloat($(this).find('.paid-amount').val()) || 0;
+        totalAmountPaid += amountPaid;
+    });
+
+    // Update the total amount paid in the table
+    $('#totalAmountPaid').text(totalAmountPaid.toFixed(2));
+}
 
         // Customer type change event
         $('#customerType').change(function () {
+
             updateSubtotal();
+            //updateUnitCost();
+
         });
 
         // Discount and tax input change event
@@ -403,6 +524,13 @@ $clients_id_json = json_encode($clients_id);
         $(document).on('click', '.remove-item', function () {
             $(this).closest('tr').remove(); // Remove the closest row when remove button is clicked
             updateSubtotal(); // Update subtotal after removing item
+            if ($('#customerType').val() === 'fixed') {
+        $('#totalAmountPaidRow').show();
+        // Update total amount paid if customer type is fixed
+        updateTotalAmountPaid();
+    } else {
+        $('#totalAmountPaidRow').hide(); // Hide total amount paid row if customer type is normal
+    }
         });
 
 
@@ -417,6 +545,8 @@ $clients_id_json = json_encode($clients_id);
             var taxAmount = $('#subTaxValue').text();
             var discountpercent = $('#discountPercentage').text();
             var taxpercent = $('#taxPercentage').text();
+            var totalreceived = $('#receivedAmount').text();
+            var ChangedAmount = $('#change').text();
             $('#billingTable tbody tr').each(function () {
                 var item = {
                     item_id: $(this).find('.item-id').val(),
@@ -455,6 +585,8 @@ $clients_id_json = json_encode($clients_id);
                 dispercent: discountpercent,
                 taxpercent: taxpercent,
                 tax: taxAmount,
+                received:totalreceived,
+                change:ChangedAmount,
             };
 
             // Send the data to the server via AJAX for saving the sale
@@ -478,73 +610,79 @@ $clients_id_json = json_encode($clients_id);
                                     var newWindow = window.open('', '', 'width=1200,height=900,left=250,location=no,titlebar=yes');
 
                                     var invoiceHTML = '<!DOCTYPE html><html><head><title>Invoice</title></head><body>' +
-    '<div class="d-flex justify-content-center">' +
-    '<div class="col-1 text-right">' +
-    '<img src="<?php echo validate_image($_settings->info('logo')) ?>" width="65px" height="65px" />' +
-    '</div>' +
-    '<div class="col-10">' +
-    '<h4 class="text-center"><?php echo $_settings->info('name') ?></h4>' +invoiceContent+
-    '</div>' +
-    '</div>';
+                                        '<div class="d-flex justify-content-center">' +
+                                        '<div class="col-1 text-right">' +
+                                        '<img src="<?php echo validate_image($_settings->info('logo')) ?>" width="65px" height="65px" />' +
+                                        '</div>' +
+                                        '<div class="col-10">' +
+                                        '<h4 class="text-center"><?php echo $_settings->info('name') ?></h4>' + invoiceContent +
+                                        '</div>' +
+                                        '</div>';
 
-// Include customer name if the customer is a fixed customer
-if ($('#customerType').val() === 'fixed') {
-    var fixedClientName = $('#searchFixedClient').val();
-    invoiceHTML += '<div><strong>Customer Name:</strong> ' + fixedClientName + '</div>';
-}
+                                    // Include customer name if the customer is a fixed customer
+                                    if ($('#customerType').val() === 'fixed') {
+                                        var fixedClientName = $('#searchFixedClient').val();
+                                        invoiceHTML += '<div><strong>Customer Name:</strong> ' + fixedClientName + '</div>';
+                                    }
 
-// Include billing details section
-invoiceHTML += '<div class="billing-details">' +
-    '<table class="table">' +
-    '<thead>' +
-    '<tr>' +
-    '<th>#  </th>' +
-    '<th>   Item Name  </th>' +
-    '<th>   Quantity   </th>' +
-    '<th>   Unit Cost  </th>' +
-    '<th>    Subtotal   </th>' +
-    '</tr>' +
-    '</thead>' +
-    '<tbody>';
+                                    // Include billing details section
+                                    invoiceHTML += '<div class="billing-details">' +
+                                        '<table class="table">' +
+                                        '<thead>' +
+                                        '<tr>' +
+                                        '<th>#  </th>' +
+                                        '<th>   Item Name  </th>' +
+                                        '<th>   Quantity   </th>' +
+                                        '<th>   Unit Cost  </th>' +
+                                        '<th>    Subtotal   </th>' +
+                                        '</tr>' +
+                                        '</thead>' +
+                                        '<tbody>';
 
-// Loop through each item in the billing table to include its details in the invoice
-$('#billingTable tbody tr').each(function(index) {
-    var itemName = $(this).find('td:nth-child(3)').text();
-    var quantity = $(this).find('.quantity').val();
-    var unitCost = $(this).find('.unit-cost').text();
-    var subtotal = $(this).find('.total-cost').text();
+                                    // Loop through each item in the billing table to include its details in the invoice
+                                    $('#billingTable tbody tr').each(function (index) {
+                                        var itemName = $(this).find('td:nth-child(3)').text();
+                                        var quantity = $(this).find('.quantity').val();
+                                        var unitCost = $(this).find('.unit-cost').text();
+                                        var subtotal = $(this).find('.total-cost').text();
 
-    // Append the item details to the HTML content
-    invoiceHTML += '<tr>' +
-        '<td>'     + (index + 1) +        '</td>' +
-        '<td>'     + itemName +           '</td>' +
-        '<td>'     + quantity +           '</td>' +
-        '<td>'     + unitCost +           '</td>' +
-        '<td>'     + subtotal +           '</td>' +
-        '</tr>';
-});
+                                        // Append the item details to the HTML content
+                                        invoiceHTML += '<tr>' +
+                                            '<td>' + (index + 1) + '</td>' +
+                                            '<td>' + itemName + '</td>' +
+                                            '<td>' + quantity + '</td>' +
+                                            '<td>' + unitCost + '</td>' +
+                                            '<td>' + subtotal + '</td>' +
+                                            '</tr>';
+                                    });
 
-// Close the table body and include the tfoot section for discount, tax, and total
-var totalDiscount = $('#subDiscountValue').text();
-var taxAmount = $('#subTaxValue').text();
-var subtotalValue = $('#subtotalValue').text();
-var discountPercentage = $('#discount').val() || 0;
-var taxPercentage = $('#tax').val() || 0;
+                                    // Close the table body and include the tfoot section for discount, tax, and total
+                                    var totalDiscount = $('#subDiscountValue').text();
+                                    var taxAmount = $('#subTaxValue').text();
+                                    var subtotalValue = $('#subtotalValue').text();
+                                    var discountPercentage = $('#discount').val() || 0;
+                                    var taxPercentage = $('#tax').val() || 0;
+                                    var receivedAmount = parseFloat($('#receivedAmount').text());
+                                    var change = parseFloat($('#change').text());
 
-invoiceHTML += '</tbody>' +
-    '<tfoot>' +
-    '<tr>' +
-    '<td colspan="4"><div><strong>Total Discount (' + discountPercentage + '%):</strong></div>' +
-    '<div><strong>Tax (' + taxPercentage + '%):</strong></div>' +
-    '<div><strong>Total:</strong></div></td>' +
-    '<td><div>' + totalDiscount + '</div>' +
-    '<div>' + taxAmount + '</div>' +
-    '<div>' + subtotalValue + '</div></td>' +
-    '</tr>' +
-    '</tfoot>' +
-    '</table>' +
-    '</div>' +
-    '</body></html>';
+                                    invoiceHTML += '</tbody>' +
+                                        '<tfoot>' +
+                                        '<tr>' +
+                                        '<td colspan="4"><div><strong>Total Discount (' + discountPercentage + '%):</strong></div>' +
+                                        '<div><strong>Tax (' + taxPercentage + '%):</strong></div>' +
+                                        '<div><strong>Total:</strong></div>' +
+                                        '<div><strong>Amount Received:</strong> </div>' +
+                                        '<div><strong>Change:</strong> </div></td>' +
+                                        '<td><div>' + totalDiscount + '</div>' +
+                                        '<div>' + taxAmount + '</div>' +
+                                        '<div>' + subtotalValue + '</div>' +
+                                        '<div>' + receivedAmount.toFixed(2) + '</div>' +
+                                        '<div>' + change.toFixed(2) + '</div></td>' +
+                                        '</tr>' +
+                                        '</tfoot>' +
+                                        '</table>' +
+                                        '</div>' +
+                                        '</body></html>';
 
 
                                     // Write the concatenated HTML content to the new window document
@@ -567,10 +705,14 @@ invoiceHTML += '</tbody>' +
                                         $('#customerType').val('normal'); // Reset customer type select field
                                         $('#searchItem').val(''); // Reset search item input field
                                         $('#discountPercentage').text('');
-                            $('#taxPercentage').text('');
-                            
-                            // Display success toast message
-                           
+                                        $('#taxPercentage').text('');
+                                        $('#amountReceived').val('');
+                                        $('#receivedAmount').text('');
+                                        $('#change').text('');
+                                        $('#totalAmountPaid').text('');
+
+                                        // Display success toast message
+
                                         // Clear other fields as needed
                                     }, 200);
                                     alert_toast("Invoice generated successfully.", 'success');
@@ -602,7 +744,7 @@ invoiceHTML += '</tbody>' +
         });
 
 
-       
+
     });
 
 

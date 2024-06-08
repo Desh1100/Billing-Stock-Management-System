@@ -788,7 +788,7 @@ Class Master extends DBConnection {
 		extract($_POST);
 		$data = "";
 		foreach($_POST as $k =>$v){
-			if($k !== 'cust_id' && $k !== 'amount_due' && !in_array($k,array('id', 'items')) && !is_array($_POST[$k])){
+			if($k !== 'cust_id' &&$k !== 'received' &&$k !== 'change' && $k !== 'amount_due' && !in_array($k,array('id', 'items')) && !is_array($_POST[$k])){
 				if(!is_numeric($v))
 					$v= $this->conn->real_escape_string($v);
 				if(!empty($data)) $data .=", ";
@@ -827,6 +827,31 @@ Class Master extends DBConnection {
 			$generated_invoice_response = $this->generated_invoice($sale_id);
 			// Merge the generated invoice response with the existing response
 			$resp = array_merge($resp, $generated_invoice_response);
+			 // Insert received and change values into the cash book table
+			// First, fetch the existing total_earning
+$select_total_earning_sql = "SELECT total_earning FROM cash_book ORDER BY date_created DESC LIMIT 1";
+$select_total_earning_result = $this->conn->query($select_total_earning_sql);
+
+if ($select_total_earning_result && $select_total_earning_result->num_rows > 0) {
+    $row = $select_total_earning_result->fetch_assoc();
+    $existing_total_earning = $row['total_earning'];
+} else {
+    // If there are no existing records, set existing_total_earning to 0
+    $existing_total_earning = 0;
+}
+
+// Calculate the new total_earning
+$new_total_earning = $existing_total_earning + $received - $change;
+
+// Insert the new record into the cash_book table
+$cash_book_sql = "INSERT INTO `cash_book` (`date_created`, `sales_no`, `received`, `total_cost`, `change`, `total_earning`) VALUES (NOW(), '{$sales_code}', '{$received}', '{$amount}', '{$change}', '{$new_total_earning}')";
+
+			 $cash_book_save = $this->conn->query($cash_book_sql);
+			 if (!$cash_book_save) {
+				 // If insertion into cash book fails, set appropriate error message
+				 $resp['status'] = 'failed';
+				 $resp['msg'] = 'An error occurred while saving into cash book: ' . $this->conn->error;
+			 }
 		}else{
 			$resp['status'] = 'failed';
 			$resp['msg'] = 'An error occurred. Error: '.$this->conn->error;

@@ -28,6 +28,8 @@ if($qry->num_rows > 0){
                         <dd class="pl-3"><?php echo isset($description) ? $description : '' ?></dd>
                         <dt class="text-info">Cost:</dt>
                         <dd class="pl-3"><?php echo isset($cost) ? number_format($cost,2) : '' ?></dd>
+                        <dt class="text-info">Selling Cost:</dt>
+                        <dd class="pl-3"><?php echo isset($selling_cost) ? number_format($selling_cost,2) : '' ?></dd>
                         <dt class="text-info">Supplier:</dt>
                         <dd class="pl-3"><?php echo isset($supplier) ? $supplier : '' ?></dd>
                         <dt class="text-info">Category:</dt>

@@ -114,6 +114,46 @@
         </div>
         <!-- /.info-box -->
     </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box bg-light shadow">
+            <span class="info-box-icon bg-purple elevation-1"><i class="nav-icon fas fa-book"></i></span>
+
+            <div class="info-box-content">
+            <span class="info-box-text">Cash Book</span>
+            <span class="info-box-number text-right">
+                <?php 
+                    $result = $conn->query("SELECT COUNT(id) AS id_count FROM `cash_book`");
+                    $row = $result->fetch_assoc();
+                    $id_count = $row['id_count'];
+                    echo $id_count;
+                    
+                ?>
+            </span>
+            </div>
+            <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box bg-light shadow">
+            <span class="info-box-icon bg-gray elevation-1"><i class="nav-icon fas fa-user"></i></span>
+
+            <div class="info-box-content">
+            <span class="info-box-text">Fix Customers</span>
+            <span class="info-box-number text-right">
+                <?php 
+                    $result = $conn->query("SELECT COUNT(id) AS id_count FROM `fix_customer`");
+                    $row = $result->fetch_assoc();
+                    $id_count = $row['id_count'];
+                    echo $id_count;
+                    
+                ?>
+            </span>
+            </div>
+            <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+    </div>
     <?php if($_settings->userdata('type') == 1): ?>
     <div class="col-12 col-sm-6 col-md-3">
         <div class="info-box bg-light shadow">
