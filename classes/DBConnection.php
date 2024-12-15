@@ -4,10 +4,10 @@ if(!defined('DB_SERVER')){
 }
 class DBConnection{
 
-    private $host = DB_SERVER;
-    private $username = DB_USERNAME;
-    private $password = DB_PASSWORD;
-    private $database = DB_NAME;
+    private $host = h40lg7qyub2umdvb.cbetxkdyhwsb.us-east-1.rds.amazonaws.com;
+    private $username = bzsh8yszz4s9m78o;
+    private $password = mmpdegiotfn2enmm;
+    private $database = kytnlimt8p7iponx;
     
     public $conn;
     
